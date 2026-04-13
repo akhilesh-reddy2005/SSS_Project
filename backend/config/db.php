@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 // CORS Configuration
 if (isset($_SERVER['HTTP_ORIGIN'])) {
     header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
@@ -15,10 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Database Connection
-$host = 'localhost';
-$db   = 'expense_tracker';
-$user = 'root';
-$pass = ''; // Default XAMPP password is empty
+$host = 'sql100.infinityfree.com';
+$db   = 'if0_41648753_expense_tracker';
+$user = 'if0_41648753';
+$pass = '3xQQEMKYjI6Mm';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
