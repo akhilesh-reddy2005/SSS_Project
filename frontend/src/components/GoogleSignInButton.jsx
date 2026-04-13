@@ -39,7 +39,7 @@ const GoogleSignInButton = ({ onCredential, onError, disabled = false }) => {
       <button
         type="button"
         onClick={handleGoogleClick}
-        className="w-full bg-white text-slate-800 hover:bg-slate-100 rounded-xl py-3 px-4 font-semibold text-sm transition flex items-center justify-center gap-3"
+        className="w-full bg-white text-slate-800 hover:bg-slate-100 rounded-xl py-2.5 px-4 font-semibold text-sm transition flex items-center justify-center gap-3"
       >
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.655 32.657 29.21 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.27 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>

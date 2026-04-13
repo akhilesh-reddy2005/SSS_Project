@@ -54,11 +54,6 @@ const UserProfileModal = ({ user, onClose }) => {
     setError('');
     setSuccess('');
 
-    if (user?.isAnonymous) {
-      setError('Demo users cannot change passwords.');
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       setError('New password and confirm password do not match.');
       return;
@@ -201,61 +196,55 @@ const UserProfileModal = ({ user, onClose }) => {
             </div>
           </div>
 
-          {!user?.isAnonymous ? (
-            <div className="border border-slate-700 rounded-xl p-4 bg-slate-800/30">
-              <h4 className="text-slate-100 font-semibold mb-3">Change Password</h4>
+          <div className="border border-slate-700 rounded-xl p-4 bg-slate-800/30">
+            <h4 className="text-slate-100 font-semibold mb-3">Change Password</h4>
 
-              <form onSubmit={handleChangePassword} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Current Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="input-field"
-                    placeholder="Current"
-                  />
-                </div>
+            <form onSubmit={handleChangePassword} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="Current"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">New Password</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="input-field"
-                    placeholder="At least 6"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">New Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="At least 6"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Confirm Password</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="input-field"
-                    placeholder="Confirm"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Confirm Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="Confirm"
+                />
+              </div>
 
-                <div className="md:col-span-3">
-                  <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 font-medium mt-2">
-                    {loading ? 'Updating...' : 'Update Password'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          ) : (
-            <div className="border border-slate-700 rounded-xl p-4 bg-slate-800/30 text-sm text-slate-300">
-              Demo users can edit their profile and export reports, but password changes are disabled.
-            </div>
-          )}
+              <div className="md:col-span-3">
+                <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 font-medium mt-2">
+                  {loading ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

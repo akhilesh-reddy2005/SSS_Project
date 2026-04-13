@@ -34,11 +34,11 @@ const ForgotPassword = () => {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/20 blur-[120px] animate-float" style={{ animationDelay: '0s' }}></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/20 blur-[120px] animate-float" style={{ animationDelay: '2s' }}></div>
 
-      <div className="glass-panel w-full max-w-md p-10 rounded-3xl relative z-10 animate-fade-in-up">
-        <h2 className="text-3xl font-bold font-['Outfit'] text-white text-center">Forgot Password</h2>
+      <div className="glass-panel w-full max-w-sm p-7 sm:p-8 rounded-2xl relative z-10 animate-fade-in-up">
+        <h2 className="text-2xl font-bold font-['Outfit'] text-white text-center">Forgot Password</h2>
         <p className="text-slate-400 mt-2 text-sm text-center">Enter your email to receive a password reset email.</p>
 
-        <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
+        <form className="space-y-5 mt-6" onSubmit={handleSubmit}>
           {error && <div className="bg-rose-500/10 text-rose-400 px-4 py-3 rounded-xl text-sm border border-rose-500/20">{error}</div>}
           {message && <div className="bg-emerald-500/10 text-emerald-400 px-4 py-3 rounded-xl text-sm border border-emerald-500/20">{message}</div>}
 
@@ -54,12 +54,12 @@ const ForgotPassword = () => {
             />
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 font-semibold">
+          <button type="submit" disabled={loading} className="btn-primary w-full py-3 font-semibold">
             {loading ? 'Please wait...' : 'Send Reset Email'}
           </button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-slate-400">
+        <div className="mt-6 text-center text-sm text-slate-400">
           Remembered your password?{' '}
           <Link to="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
             Back to sign in

@@ -25,7 +25,7 @@ export const getFirebasePermissionHelp = (error) => {
   const message = String(error?.message || '');
 
   if (code === 'permission-denied' || message.toLowerCase().includes('missing or insufficient permissions')) {
-    return 'Firebase blocked this write. Publish Firestore and Storage rules that allow the signed-in user to access their own /users/{uid} data, and make sure Anonymous Auth or Email/Password Auth is enabled in Firebase.';
+    return 'Firebase blocked this write. Publish Firestore and Storage rules that allow the signed-in user to access their own /users/{uid} data, and make sure Email/Password or Google sign-in is enabled in Firebase.';
   }
 
   return error?.message || 'Operation failed.';

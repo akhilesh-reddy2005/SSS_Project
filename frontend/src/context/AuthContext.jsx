@@ -6,7 +6,6 @@ import {
   reauthenticateWithCredential,
   reload,
   sendEmailVerification,
-  signInAnonymously,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updatePassword,
@@ -70,8 +69,7 @@ export const AuthProvider = ({ children }) => {
           uid: firebaseUser.uid,
           name: profile?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
           email: firebaseUser.email || profile?.email || '',
-          photoURL: firebaseUser.photoURL || profile?.photoURL || '',
-          isAnonymous: firebaseUser.isAnonymous || false
+          photoURL: firebaseUser.photoURL || profile?.photoURL || ''
         });
       } finally {
         setLoading(false);
@@ -107,8 +105,7 @@ export const AuthProvider = ({ children }) => {
         uid: credential.user.uid,
         name: credential.user.displayName || credential.user.email?.split('@')[0] || 'User',
         email: credential.user.email || '',
-        photoURL: credential.user.photoURL || '',
-        isAnonymous: credential.user.isAnonymous || false
+        photoURL: credential.user.photoURL || ''
       });
       return true;
     } catch (error) {
@@ -164,28 +161,8 @@ export const AuthProvider = ({ children }) => {
       uid: firebaseUser.uid,
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
       email: firebaseUser.email || '',
-      photoURL: firebaseUser.photoURL || '',
-      isAnonymous: firebaseUser.isAnonymous || false
+      photoURL: firebaseUser.photoURL || ''
     });
-    return true;
-  };
-
-  const loginAsDemo = async () => {
-    if (!isFirebaseConfigured || !auth) {
-      throw new Error('Firebase config is missing. Set VITE_FIREBASE_* keys in frontend/.env.');
-    }
-
-    const credential = await signInAnonymously(auth);
-    await ensureUserProfile(credential.user);
-    setUser({
-      id: credential.user.uid,
-      uid: credential.user.uid,
-      name: 'Demo User',
-      email: '',
-      photoURL: '',
-      isAnonymous: true
-    });
-
     return true;
   };
 
@@ -210,8 +187,7 @@ export const AuthProvider = ({ children }) => {
       uid: firebaseUser.uid,
       name: profile?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
       email: firebaseUser.email || profile?.email || '',
-      photoURL: firebaseUser.photoURL || profile?.photoURL || '',
-      isAnonymous: firebaseUser.isAnonymous || false
+      photoURL: firebaseUser.photoURL || profile?.photoURL || ''
     });
   };
 
@@ -232,8 +208,7 @@ export const AuthProvider = ({ children }) => {
       id: auth.currentUser.uid,
       uid: auth.currentUser.uid,
       name: userProfile.name,
-      email: auth.currentUser.email || prev?.email || '',
-      isAnonymous: auth.currentUser.isAnonymous || prev?.isAnonymous || false
+      email: auth.currentUser.email || prev?.email || ''
     }));
 
     return userProfile;
@@ -250,7 +225,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, loginAsDemo, logout, refreshUser, updateProfileName, changePassword, loading }}>
+    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, refreshUser, updateProfileName, changePassword, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
