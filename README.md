@@ -76,6 +76,47 @@ expense-tracker/
 
 ## Installation & Setup
 
+### Docker Deployment (Recommended)
+
+1. **Create Docker env file**
+   - Copy `.env.docker.example` to `.env` in project root.
+   - Fill Firebase values and adjust DB credentials if needed.
+
+2. **Start all services**
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Access the app**
+   - Frontend: `http://localhost:8080`
+   - Backend API: `http://localhost:10000/api`
+   - MySQL host from local machine: `127.0.0.1:3307`
+
+4. **Stop services**
+   ```bash
+   docker compose down
+   ```
+
+5. **Reset containers + DB volume**
+   ```bash
+   docker compose down -v
+   docker compose up -d --build
+   ```
+
+6. **View logs**
+   ```bash
+   docker compose logs -f backend
+   docker compose logs -f frontend
+   docker compose logs -f db
+   ```
+
+7. **Production notes**
+   - Do not use default DB passwords.
+   - Keep `.env` secrets private.
+   - Set `FRONTEND_URL` to your real frontend domain.
+   - Set `VITE_API_BASE_URL` to your public backend API URL.
+   - Current receipt uploads are stored on local volume (`backend/uploads`).
+
 ### Prerequisites
 - XAMPP (includes Apache, PHP, MySQL)
 - Node.js and npm

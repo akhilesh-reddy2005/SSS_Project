@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once '../config/session.php';
+start_app_session();
 require_once '../config/db.php';
 require_once '../config/firebase.php';
 
@@ -90,6 +91,32 @@ function verify_firebase_id_token($id_token) {
     ];
 }
 
+function send_firebase_password_reset_email($email) {
+    $settings = firebase_settings();
+    $api_key = $settings['web_api_key'];
+
+    if (empty($api_key)) {
+        return ['ok' => false, 'message' => 'Firebase API key missing in backend config.'];
+    }
+
+    $url = 'https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=' . urlencode($api_key);
+    $payload = [
+        'requestType' => 'PASSWORD_RESET',
+        'email' => $email,
+    ];
+
+    $result = firebase_http_post_json($url, $payload);
+
+    if ($result['ok']) {
+        return ['ok' => true];
+    }
+
+    $firebase_error = $result['data']['error']['message'] ?? 'Unable to send password reset email.';
+
+    // Do not expose internals to the UI; this is useful for server logs/debugging.
+    return ['ok' => false, 'message' => $firebase_error];
+}
+
 function ensure_firebase_uid_column($pdo) {
     static $checked = false;
 
@@ -136,72 +163,6 @@ function upsert_firebase_user($pdo, $uid, $email, $name) {
         'name' => $name,
         'email' => $email
     ];
-}
-
-function ensure_password_resets_table($pdo) {
-    static $checked = false;
-
-    if ($checked) {
-        return;
-    }
-
-    $pdo->exec(
-        'CREATE TABLE IF NOT EXISTS password_resets (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(100) NOT NULL,
-            token_hash VARCHAR(64) NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_password_resets_email (email),
-            INDEX idx_password_resets_token_hash (token_hash),
-            INDEX idx_password_resets_expires_at (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
-    );
-
-    $checked = true;
-}
-
-function create_password_reset_token($pdo, $email) {
-    ensure_password_resets_table($pdo);
-
-    $pdo->prepare('DELETE FROM password_resets WHERE email = ? OR expires_at < NOW()')->execute([$email]);
-
-    $token = bin2hex(random_bytes(32));
-    $token_hash = hash('sha256', $token);
-    $expires_at = date('Y-m-d H:i:s', time() + 3600);
-
-    $stmt = $pdo->prepare('INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, ?)');
-    $stmt->execute([$email, $token_hash, $expires_at]);
-
-    return $token;
-}
-
-function reset_password_with_token($pdo, $token, $new_password) {
-    ensure_password_resets_table($pdo);
-
-    if (strlen($new_password) < 6) {
-        return ['ok' => false, 'message' => 'Password must be at least 6 characters.'];
-    }
-
-    $token_hash = hash('sha256', $token);
-    $stmt = $pdo->prepare('SELECT email FROM password_resets WHERE token_hash = ? AND expires_at > NOW() LIMIT 1');
-    $stmt->execute([$token_hash]);
-    $reset_row = $stmt->fetch();
-
-    if (!$reset_row) {
-        return ['ok' => false, 'message' => 'Invalid or expired reset link.'];
-    }
-
-    $email = $reset_row['email'];
-    $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
-
-    $update_stmt = $pdo->prepare('UPDATE users SET password = ? WHERE email = ?');
-    $update_stmt->execute([$password_hash, $email]);
-
-    $cleanup_stmt = $pdo->prepare('DELETE FROM password_resets WHERE email = ?');
-    $cleanup_stmt->execute([$email]);
-
-    return ['ok' => true];
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -257,7 +218,7 @@ if ($method === 'POST') {
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Invalid email or password.']);
         }
-    } elseif ($action === 'google') {
+    } elseif ($action === 'google' || $action === 'firebase') {
         $id_token = $data['idToken'] ?? '';
         $verified = verify_firebase_id_token($id_token);
 
@@ -278,7 +239,7 @@ if ($method === 'POST') {
 
         echo json_encode([
             'status' => 'success',
-            'message' => 'Firebase Google sign-in successful.',
+            'message' => 'Firebase sign-in successful.',
             'user' => [
                 'id' => $user['id'],
                 'name' => $user['name'],
@@ -293,43 +254,23 @@ if ($method === 'POST') {
             exit;
         }
 
-        $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+        $reset_result = send_firebase_password_reset_email($email);
 
-        if ($user) {
-            $token = create_password_reset_token($pdo, $email);
-            $reset_link = 'http://localhost:5173/reset-password?token=' . urlencode($token);
-
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Password reset link generated.',
-                'reset_link' => $reset_link
-            ]);
-            exit;
-        }
-
-        // Keep this generic for safety.
+        // Keep this generic for safety regardless of email existence.
         echo json_encode([
             'status' => 'success',
-            'message' => 'If the email exists, a reset link has been generated.'
+            'message' => 'If the email exists, a password reset email has been sent.'
         ]);
+
+        // Optional server-side diagnostics without exposing details to clients.
+        if (!$reset_result['ok']) {
+            error_log('Firebase forgot_password failed for ' . $email . ': ' . $reset_result['message']);
+        }
     } elseif ($action === 'reset_password') {
-        $token = trim($data['token'] ?? '');
-        $password = $data['password'] ?? '';
-
-        if (empty($token) || empty($password)) {
-            echo json_encode(['status' => 'error', 'message' => 'Token and new password are required.']);
-            exit;
-        }
-
-        $result = reset_password_with_token($pdo, $token, $password);
-        if (!$result['ok']) {
-            echo json_encode(['status' => 'error', 'message' => $result['message']]);
-            exit;
-        }
-
-        echo json_encode(['status' => 'success', 'message' => 'Password updated successfully. Please sign in.']);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'This endpoint is deprecated. Use Firebase password reset link from email.'
+        ]);
     } elseif ($action === 'change_password') {
         if (!isset($_SESSION['user_id'])) {
             echo json_encode(['status' => 'error', 'message' => 'Unauthorized.']);

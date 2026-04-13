@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../services/api';
+import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
+import { auth, isFirebaseConfigured } from '../services/firebase';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = useMemo(() => searchParams.get('token') || '', [searchParams]);
+  const oobCode = useMemo(() => searchParams.get('oobCode') || '', [searchParams]);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,8 +19,13 @@ const ResetPassword = () => {
     setError('');
     setSuccess('');
 
-    if (!token) {
-      setError('Invalid reset link.');
+    if (!isFirebaseConfigured || !auth) {
+      setError('Firebase config is missing. Set VITE_FIREBASE_* keys in frontend/.env.');
+      return;
+    }
+
+    if (!oobCode) {
+      setError('Invalid reset link. Please use the link sent to your email.');
       return;
     }
 
@@ -30,15 +36,18 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const response = await api.post('/auth.php?action=reset_password', { token, password });
-      if (response.data.status === 'success') {
-        setSuccess('Password updated successfully. Redirecting to sign in...');
-        setTimeout(() => navigate('/login'), 1500);
-      } else {
-        setError(response.data.message || 'Unable to reset password.');
-      }
+      await verifyPasswordResetCode(auth, oobCode);
+      await confirmPasswordReset(auth, oobCode, password);
+      setSuccess('Password updated successfully. Redirecting to sign in...');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to reset password.');
+      if (err?.code === 'auth/expired-action-code') {
+        setError('This reset link has expired. Request a new password reset email.');
+      } else if (err?.code === 'auth/invalid-action-code') {
+        setError('This reset link is invalid. Request a new password reset email.');
+      } else {
+        setError('Unable to reset password. Please request a new reset email.');
+      }
     } finally {
       setLoading(false);
     }

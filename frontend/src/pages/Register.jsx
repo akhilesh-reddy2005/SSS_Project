@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Wallet, Loader2, UserPlus } from 'lucide-react';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -9,18 +9,19 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { register, loginWithGoogle } = useContext(AuthContext);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
-      await register(name, email, password);
-      navigate('/');
+      const result = await register(name, email, password);
+      setSuccess(result?.message || 'Verification email sent. Please verify before sign in.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -60,6 +61,11 @@ const Register = () => {
           {error && (
             <div className="bg-rose-500/10 text-rose-400 px-4 py-3 rounded-xl text-sm font-medium border border-rose-500/20 flex items-center animate-scale-in">
               <span className="mr-2">⚠️</span> {error}
+            </div>
+          )}
+          {success && (
+            <div className="bg-emerald-500/10 text-emerald-300 px-4 py-3 rounded-xl text-sm font-medium border border-emerald-500/20 animate-scale-in">
+              {success}
             </div>
           )}
           

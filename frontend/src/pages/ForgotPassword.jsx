@@ -5,7 +5,6 @@ import api from '../services/api';
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
-  const [resetLink, setResetLink] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,15 +13,11 @@ const ForgotPassword = () => {
     setLoading(true);
     setError('');
     setMessage('');
-    setResetLink('');
 
     try {
       const response = await api.post('/auth.php?action=forgot_password', { email });
       if (response.data.status === 'success') {
-        setMessage(response.data.message || 'If the email exists, a reset link has been generated.');
-        if (response.data.reset_link) {
-          setResetLink(response.data.reset_link);
-        }
+        setMessage(response.data.message || 'If the email exists, a password reset email has been sent.');
       } else {
         setError(response.data.message || 'Unable to process request.');
       }
@@ -40,17 +35,11 @@ const ForgotPassword = () => {
 
       <div className="glass-panel w-full max-w-md p-10 rounded-3xl relative z-10 animate-fade-in-up">
         <h2 className="text-3xl font-bold font-['Outfit'] text-white text-center">Forgot Password</h2>
-        <p className="text-slate-400 mt-2 text-sm text-center">Enter your email to generate a password reset link.</p>
+        <p className="text-slate-400 mt-2 text-sm text-center">Enter your email to receive a password reset email.</p>
 
         <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
           {error && <div className="bg-rose-500/10 text-rose-400 px-4 py-3 rounded-xl text-sm border border-rose-500/20">{error}</div>}
           {message && <div className="bg-emerald-500/10 text-emerald-400 px-4 py-3 rounded-xl text-sm border border-emerald-500/20">{message}</div>}
-
-          {resetLink && (
-            <div className="bg-indigo-500/10 text-indigo-200 px-4 py-3 rounded-xl text-sm border border-indigo-500/20 break-words">
-              Reset link: <a href={resetLink} className="underline">{resetLink}</a>
-            </div>
-          )}
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2 ml-1">Email</label>
@@ -65,7 +54,7 @@ const ForgotPassword = () => {
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 font-semibold">
-            {loading ? 'Please wait...' : 'Generate Reset Link'}
+            {loading ? 'Please wait...' : 'Send Reset Email'}
           </button>
         </form>
 
