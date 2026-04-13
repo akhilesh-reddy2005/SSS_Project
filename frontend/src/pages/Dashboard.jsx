@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import ExpenseForm from '../components/ExpenseForm';
 import InstallAppButton from '../components/InstallAppButton';
-import { deleteExpense as deleteExpenseDoc, getReports, listExpenses, setBudget } from '../services/firebaseData';
+import { deleteExpense as deleteExpenseDoc, getFirebasePermissionHelp, getReports, listExpenses, setBudget } from '../services/firebaseData';
 import { AuthContext } from '../context/AuthContext';
 import {
   PieChart,
@@ -155,7 +155,7 @@ const Dashboard = () => {
       await setBudget(user?.uid || user?.id, currentMonth, amount);
       fetchDashboardData();
     } catch (err) {
-      window.alert(err.message || 'Failed to save budget.');
+      window.alert(getFirebasePermissionHelp(err));
     } finally {
       setSavingBudget(false);
     }

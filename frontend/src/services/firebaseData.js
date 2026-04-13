@@ -20,6 +20,17 @@ import { db, storage } from './firebase';
 
 const USERS_COLLECTION = 'users';
 
+export const getFirebasePermissionHelp = (error) => {
+  const code = error?.code || '';
+  const message = String(error?.message || '');
+
+  if (code === 'permission-denied' || message.toLowerCase().includes('missing or insufficient permissions')) {
+    return 'Firebase blocked this write. Publish Firestore and Storage rules that allow the signed-in user to access their own /users/{uid} data, and make sure Anonymous Auth or Email/Password Auth is enabled in Firebase.';
+  }
+
+  return error?.message || 'Operation failed.';
+};
+
 const expenseDocRef = (uid, expenseId) => doc(db, USERS_COLLECTION, uid, 'expenses', expenseId);
 const budgetDocRef = (uid, month) => doc(db, USERS_COLLECTION, uid, 'budgets', month);
 const userDocRef = (uid) => doc(db, USERS_COLLECTION, uid);

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { X, Loader2, Save } from 'lucide-react';
-import { saveExpense } from '../services/firebaseData';
+import { getFirebasePermissionHelp, saveExpense } from '../services/firebaseData';
 import { AuthContext } from '../context/AuthContext';
 
 const ExpenseForm = ({ expense, onClose, onSaved }) => {
@@ -52,7 +52,7 @@ const ExpenseForm = ({ expense, onClose, onSaved }) => {
       }, receiptFile);
       onSaved();
     } catch (err) {
-      setError(err.message || 'Failed to save expense.');
+      setError(getFirebasePermissionHelp(err));
     } finally {
       setLoading(false);
     }
