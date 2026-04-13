@@ -1,11 +1,11 @@
 # NexusExpense - Expense Tracker Application
 
-A full-stack expense tracking application built with React, Vite, and PHP. Manage your expenses efficiently with advanced analytics, budgeting capabilities, and secure authentication.
+A Firebase-powered expense tracking application built with React and Vite. Manage your expenses efficiently with advanced analytics, budgeting capabilities, and secure authentication.
 
 ## Features
 
 ### Core Functionality
-- **User Authentication**: Email/password registration and login with Firebase Google Sign-In integration
+- **User Authentication**: Email/password registration and login with Firebase Auth and Google Sign-In
 - **Expense Management**: Create, edit, and delete expenses with categories
 - **Receipt Upload**: Upload and store receipt images for each expense
 - **Smart Filtering**: Filter expenses by date range, category, and description search
@@ -40,13 +40,12 @@ A full-stack expense tracking application built with React, Vite, and PHP. Manag
 - **jsPDF & xlsx** - Export functionality
 
 ### Backend
-- **PHP** - Server-side language
-- **PDO** - Database access layer
-- **MySQL** - Database
-- **Firebase Identity Toolkit** - Token verification
+- **Firebase Auth** - Authentication
+- **Firestore** - Expense and profile storage
+- **Firebase Storage** - Receipt uploads
+- **Firebase Analytics** - Optional usage analytics
 
 ### Infrastructure
-- **XAMPP** - Local development environment
 - **Git/GitHub** - Version control
 
 ## Project Structure
@@ -58,89 +57,19 @@ expense-tracker/
 │   │   ├── pages/           # Page components (Dashboard, Login, Register, etc.)
 │   │   ├── components/      # Reusable UI components
 │   │   ├── context/         # React Context for state management
-│   │   ├── services/        # API and Firebase services
+│   │   ├── services/        # Firebase services
 │   │   └── App.jsx
 │   ├── vite.config.js
 │   ├── tailwind.config.js
 │   └── package.json
-├── backend/                  # PHP API
-│   ├── api/
-│   │   ├── auth.php         # Authentication endpoints
-│   │   ├── expenses.php     # Expense CRUD operations
-│   │   └── reports.php      # Analytics and reporting
-│   └── config/
-│       ├── db.php           # Database connection
-│       └── firebase.php     # Firebase configuration
-└── database.sql             # SQL schema and migrations
+└── Firebase services        # Auth, Firestore, Storage, Analytics
 ```
 
 ## Installation & Setup
 
-### Docker Deployment (Recommended)
-
-1. **Create Docker env file**
-   - Copy `.env.docker.example` to `.env` in project root.
-   - Fill Firebase values and adjust DB credentials if needed.
-
-2. **Start all services**
-   ```bash
-   docker compose up -d --build
-   ```
-
-3. **Access the app**
-   - Frontend: `http://localhost:8080`
-   - Backend API: `http://localhost:10000/api`
-   - MySQL host from local machine: `127.0.0.1:3307`
-
-4. **Stop services**
-   ```bash
-   docker compose down
-   ```
-
-5. **Reset containers + DB volume**
-   ```bash
-   docker compose down -v
-   docker compose up -d --build
-   ```
-
-6. **View logs**
-   ```bash
-   docker compose logs -f backend
-   docker compose logs -f frontend
-   docker compose logs -f db
-   ```
-
-7. **Production notes**
-   - Do not use default DB passwords.
-   - Keep `.env` secrets private.
-   - Set `FRONTEND_URL` to your real frontend domain.
-   - Set `VITE_API_BASE_URL` to your public backend API URL.
-   - Current receipt uploads are stored on local volume (`backend/uploads`).
-
 ### Prerequisites
-- XAMPP (includes Apache, PHP, MySQL)
 - Node.js and npm
 - Git
-
-### Backend Setup
-
-1. **Create MySQL Database**
-   ```sql
-   CREATE DATABASE expense_tracker;
-   ```
-
-2. **Import Schema**
-   ```bash
-   mysql -u root -p expense_tracker < database.sql
-   ```
-
-3. **Configure Database** (if needed)
-   - Edit `backend/config/db.php`
-   - Update `$host`, `$db`, `$user`, `$pass` as needed
-
-4. **Firebase Configuration** (Optional)
-   - Copy `backend/config/firebase.local.example.php` to `backend/config/firebase.local.php`
-   - Add your Firebase Web API key
 
 ### Frontend Setup
 
@@ -151,13 +80,8 @@ expense-tracker/
    ```
 
 2. **Configure Environment**
-   - Copy `.env.example` to `.env`
-   - Add your Firebase configuration:
-     ```bash
-     VITE_FIREBASE_API_KEY=your_key
-     VITE_FIREBASE_PROJECT_ID=your_project
-     # ... other Firebase config
-     ```
+   - Firebase config is embedded in `frontend/src/services/firebase.js`
+   - Update it there if you need a different Firebase project
 
 3. **Start Development Server**
    ```bash
@@ -173,25 +97,20 @@ expense-tracker/
 
 ### Running Locally
 
-1. **Start XAMPP**
-   - Open XAMPP Control Panel
-   - Start Apache and MySQL
-
-2. **Start Frontend Dev Server**
+1. **Start Frontend Dev Server**
    ```bash
    cd frontend
    npm run dev
    ```
 
-3. **Access Application**
+2. **Access Application**
    - Navigate to `http://localhost:5173`
-   - The frontend will make API calls to `http://localhost/expense-tracker/backend/api`
 
 ### User Workflow
 
 1. **Register/Login**
    - Create new account or sign in with Google
-   - Verify email through Firebase (if using Google Sign-In)
+   - Verify email through Firebase before first login
 
 2. **Add Expense**
    - Click "Add Expense" button
@@ -216,65 +135,19 @@ expense-tracker/
    - Export expenses as PDF or Excel
    - View reset password and logout options
 
-## API Endpoints
+## Firebase Data Model
 
-### Authentication
-- `POST /auth.php?action=register` - Register new user
-- `POST /auth.php?action=login` - Login with email/password
-- `POST /auth.php?action=google` - Google Sign-In
-- `GET /auth.php?action=me` - Get current user
-- `POST /auth.php?action=logout` - Logout
-- `POST /auth.php?action=forgot_password` - Request password reset
-- `POST /auth.php?action=reset_password` - Reset password with token
-- `POST /auth.php?action=change_password` - Change password
-- `POST /auth.php?action=update_profile` - Update user profile
-
-### Expenses
-- `GET /expenses.php` - Get all expenses (with filters)
-- `POST /expenses.php` - Create expense (with receipt upload)
-- `PUT /expenses.php?id=X` - Update expense
-- `DELETE /expenses.php?id=X` - Delete expense
-
-### Reports
-- `GET /reports.php` - Get analytics data
-- `POST /reports.php?action=set_budget` - Set monthly budget
-
-## Database Schema
-
-### Users Table
-- `id` - Primary key
-- `name` - User full name
-- `email` - Email address (unique)
-- `password` - Hashed password
-- `firebase_uid` - Firebase user ID
-- `created_at` - Registration timestamp
-
-### Expenses Table
-- `id` - Primary key
-- `user_id` - Foreign key to users
-- `amount` - Expense amount (decimal)
-- `category` - Category enum (Food, Travel, Bills, Shopping, Others)
-- `expense_date` - Date of expense
-- `description` - Optional notes
-- `receipt_path` - Path to uploaded receipt image
-- `created_at` - Creation timestamp
-
-### Budgets Table
-- `id` - Primary key
-- `user_id` - Foreign key to users
-- `budget_month` - Month in YYYY-MM format
-- `amount` - Monthly budget amount
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
+- `users/{uid}` stores profile data
+- `users/{uid}/expenses/{expenseId}` stores expenses
+- `users/{uid}/budgets/{YYYY-MM}` stores monthly budgets
+- Firebase Storage stores receipt images under `receipts/{uid}/...`
 
 ## Security Features
 
-- **Session-Based Authentication**: Secure PHP sessions for logged-in users
-- **Password Hashing**: bcrypt for secure password storage
-- **CORS Configuration**: Proper CORS headers for API security
-- **Firebase Token Verification**: Backend verification of Firebase ID tokens
-- **SQL Injection Prevention**: Prepared statements via PDO
-- **Input Validation**: Server-side validation for all inputs
+- **Firebase Authentication**: Secure user sign-in and email verification
+- **Firestore Security**: Data isolated per authenticated user
+- **Firebase Storage**: Receipt uploads stored per user
+- **Input Validation**: Client-side validation for all inputs
 
 ## Contributing
 
@@ -296,24 +169,14 @@ This project is licensed under the MIT License.
 
 ## Troubleshooting
 
-### Database Connection Error
-- Ensure MySQL is running in XAMPP
-- Verify database credentials in `backend/config/db.php`
-- Check that `expense_tracker` database exists
-
-### CORS Issues
-- API CORS headers are configured in `backend/config/db.php`
-- Ensure frontend is accessing backend with correct base URL
-
 ### Firebase Auth Issues
-- Verify Firebase configuration in `.env`
+- Verify Firebase configuration in `frontend/src/services/firebase.js`
 - Check Firebase Web API key and project ID
 - Ensure email verification is enabled in Firebase Console
 
 ### Receipt Upload Issues
-- Ensure `backend/uploads/receipts/` directory exists and is writable
 - Supported formats: JPEG, PNG, WebP
-- Maximum file size: 5MB (configurable)
+- Maximum file size: 5MB
 
 ## Support
 

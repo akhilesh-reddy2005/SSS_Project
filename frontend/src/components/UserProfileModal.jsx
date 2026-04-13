@@ -1,13 +1,13 @@
 import React, { useContext, useState } from 'react';
 import { X, User, Save, Download } from 'lucide-react';
-import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { getExportRowsForMonth } from '../services/firebaseData';
 
 const UserProfileModal = ({ user, onClose }) => {
-  const { updateProfileName } = useContext(AuthContext);
+  const { updateProfileName, changePassword } = useContext(AuthContext);
   const [name, setName] = useState(user?.name || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -54,6 +54,11 @@ const UserProfileModal = ({ user, onClose }) => {
     setError('');
     setSuccess('');
 
+    if (user?.isAnonymous) {
+      setError('Demo users cannot change passwords.');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setError('New password and confirm password do not match.');
       return;
@@ -61,33 +66,20 @@ const UserProfileModal = ({ user, onClose }) => {
 
     setLoading(true);
     try {
-      const response = await api.post('/auth.php?action=change_password', {
-        currentPassword,
-        newPassword
-      });
-
-      if (response.data.status === 'success') {
-        setSuccess(response.data.message || 'Password changed successfully.');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        setError(response.data.message || 'Unable to change password.');
-      }
+      await changePassword(currentPassword, newPassword);
+      setSuccess('Password changed successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to change password.');
+      setError(err.message || 'Unable to change password.');
     } finally {
       setLoading(false);
     }
   };
 
   const fetchMonthlyExpenses = async () => {
-    const { start, end } = getDateRangeFromMonth(exportMonth);
-    const response = await api.get(`/expenses.php?start_date=${start}&end_date=${end}`);
-    if (response.data.status !== 'success') {
-      throw new Error('Unable to fetch expenses for export.');
-    }
-    return response.data.data || [];
+    return getExportRowsForMonth(user.uid || user.id, exportMonth);
   };
 
   const exportToPDF = async () => {
@@ -209,55 +201,61 @@ const UserProfileModal = ({ user, onClose }) => {
             </div>
           </div>
 
-          <div className="border border-slate-700 rounded-xl p-4 bg-slate-800/30">
-            <h4 className="text-slate-100 font-semibold mb-3">Change Password</h4>
+          {!user?.isAnonymous ? (
+            <div className="border border-slate-700 rounded-xl p-4 bg-slate-800/30">
+              <h4 className="text-slate-100 font-semibold mb-3">Change Password</h4>
 
-            <form onSubmit={handleChangePassword} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Current Password</label>
-                <input
-                  type="password"
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="input-field"
-                  placeholder="Current"
-                />
-              </div>
+              <form onSubmit={handleChangePassword} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Current Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="Current"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">New Password</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="input-field"
-                  placeholder="At least 6"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="At least 6"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Confirm Password</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-field"
-                  placeholder="Confirm"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Confirm Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="Confirm"
+                  />
+                </div>
 
-              <div className="md:col-span-3">
-                <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 font-medium mt-2">
-                  {loading ? 'Updating...' : 'Update Password'}
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="md:col-span-3">
+                  <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 font-medium mt-2">
+                    {loading ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="border border-slate-700 rounded-xl p-4 bg-slate-800/30 text-sm text-slate-300">
+              Demo users can edit their profile and export reports, but password changes are disabled.
+            </div>
+          )}
         </div>
       </div>
     </div>

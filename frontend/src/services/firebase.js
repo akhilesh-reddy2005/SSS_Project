@@ -1,23 +1,29 @@
 import { initializeApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics';
+import { getFirestore } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: 'AIzaSyBVVZHxAxG6332dnpv8XqitMWDPGQp0sb4',
+  authDomain: 'expense-tracker-7297b.firebaseapp.com',
+  projectId: 'expense-tracker-7297b',
+  storageBucket: 'expense-tracker-7297b.firebasestorage.app',
+  messagingSenderId: '698461205113',
+  appId: '1:698461205113:web:1782fc92cd460abae99aa8',
+  measurementId: 'G-EJVW5M3S0C'
 };
 
 const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
 const hasAllKeys = requiredKeys.every((key) => Boolean(firebaseConfig[key]));
 
 const app = hasAllKeys ? initializeApp(firebaseConfig) : null;
+const analytics = app && typeof window !== 'undefined' ? getAnalytics(app) : null;
 const auth = app ? getAuth(app) : null;
+const db = app ? getFirestore(app) : null;
+const storage = app ? getStorage(app) : null;
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-export { auth, googleProvider };
+export { analytics, auth, db, googleProvider, storage };
 export const isFirebaseConfigured = hasAllKeys;

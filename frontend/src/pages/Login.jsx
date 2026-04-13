@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Wallet, Loader2, ArrowRight } from 'lucide-react';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import InstallAppButton from '../components/InstallAppButton';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login, loginWithGoogle } = useContext(AuthContext);
+  const { login, loginWithGoogle, loginAsDemo } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -35,6 +36,19 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       setError(err.message || 'Google sign-in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginAsDemo();
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Demo sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -118,6 +132,19 @@ const Login = () => {
           onError={setError}
           disabled={loading}
         />
+
+        <button
+          type="button"
+          onClick={handleDemoLogin}
+          disabled={loading}
+          className="mt-4 w-full py-3.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-200 font-medium hover:bg-cyan-500/15 hover:border-cyan-400/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Starting demo...' : 'Continue as Demo'}
+        </button>
+
+        <div className="mt-4">
+          <InstallAppButton fullWidth className="py-3.5" />
+        </div>
         
         <div className="mt-8 text-center text-sm text-slate-400">
           New here?{' '}

@@ -1,14 +1,19 @@
 import React, { createContext, useState, useEffect } from 'react';
-import api from '../services/api';
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
   reload,
   sendEmailVerification,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  updatePassword,
   updateProfile
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../services/firebase';
+import { ensureUserProfile, getUserProfile, updateUserProfileName } from '../services/firebaseData';
 
 const getFirebaseAuthErrorMessage = (error) => {
   const code = error?.code || '';
@@ -40,57 +45,45 @@ const getFirebaseAuthErrorMessage = (error) => {
   return error?.message || 'Authentication failed. Please try again.';
 };
 
-const isLocalhost = () => {
-  const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1';
-};
-
-const isDemoUserEmail = (email) => {
-  return String(email || '').trim().toLowerCase() === 'demo@example.com';
-};
-
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const checkUser = async () => {
-    try {
-      const response = await api.get('/auth.php?action=me');
-      if (response.data.status === 'success') {
-        setUser(response.data.user);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  const loginWithBackendFallback = async (email, password) => {
-    const response = await api.post('/auth.php?action=login', { email, password });
-    if (response.data.status === 'success') {
-      setUser(response.data.user);
-      return true;
+    if (!isFirebaseConfigured || !auth) {
+      setLoading(false);
+      return undefined;
     }
 
-    throw new Error(response.data.message || 'Invalid email or password.');
-  };
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          setUser(null);
+          return;
+        }
+
+        const profile = (await getUserProfile(firebaseUser.uid)) || (await ensureUserProfile(firebaseUser));
+        setUser({
+          id: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          name: profile?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || profile?.email || '',
+          photoURL: firebaseUser.photoURL || profile?.photoURL || '',
+          isAnonymous: firebaseUser.isAnonymous || false
+        });
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email, password) => {
     try {
       if (!isFirebaseConfigured || !auth) {
-        if (isLocalhost() && isDemoUserEmail(email)) {
-          return await loginWithBackendFallback(email, password);
-        }
-
         throw new Error('Firebase config is missing. Set VITE_FIREBASE_* keys in frontend/.env.');
       }
 
@@ -108,26 +101,17 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Please verify your email first. A verification email has been sent.');
       }
 
-      const idToken = await credential.user.getIdToken();
-      const response = await api.post('/auth.php?action=firebase', { idToken });
-
-      if (response.data.status === 'success') {
-        setUser(response.data.user);
-        return true;
-      }
-
-      await firebaseSignOut(auth);
-      throw new Error(response.data.message);
+      await ensureUserProfile(credential.user);
+      setUser({
+        id: credential.user.uid,
+        uid: credential.user.uid,
+        name: credential.user.displayName || credential.user.email?.split('@')[0] || 'User',
+        email: credential.user.email || '',
+        photoURL: credential.user.photoURL || '',
+        isAnonymous: credential.user.isAnonymous || false
+      });
+      return true;
     } catch (error) {
-      const isFirebaseCredentialError =
-        error?.code === 'auth/invalid-credential' ||
-        error?.code === 'auth/wrong-password' ||
-        error?.code === 'auth/user-not-found';
-
-      if (isLocalhost() && isDemoUserEmail(email) && isFirebaseCredentialError) {
-        return await loginWithBackendFallback(email, password);
-      }
-
       if (error?.code) {
         throw new Error(getFirebaseAuthErrorMessage(error));
       }
@@ -150,6 +134,7 @@ export const AuthProvider = ({ children }) => {
 
       await sendEmailVerification(credential.user);
       await firebaseSignOut(auth);
+      await ensureUserProfile(credential.user);
 
       return {
         requiresVerification: true,
@@ -164,17 +149,47 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginWithGoogle = async (idToken) => {
-    const response = await api.post('/auth.php?action=google', { idToken });
-    if (response.data.status === 'success') {
-      setUser(response.data.user);
-      return true;
+  const loginWithGoogle = async (firebaseUser) => {
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error('Firebase config is missing. Set VITE_FIREBASE_* keys in frontend/.env.');
     }
-    throw new Error(response.data.message || 'Google sign-in failed.');
+
+    if (!firebaseUser?.uid) {
+      throw new Error('Google sign-in failed.');
+    }
+
+    await ensureUserProfile(firebaseUser);
+    setUser({
+      id: firebaseUser.uid,
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      email: firebaseUser.email || '',
+      photoURL: firebaseUser.photoURL || '',
+      isAnonymous: firebaseUser.isAnonymous || false
+    });
+    return true;
+  };
+
+  const loginAsDemo = async () => {
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error('Firebase config is missing. Set VITE_FIREBASE_* keys in frontend/.env.');
+    }
+
+    const credential = await signInAnonymously(auth);
+    await ensureUserProfile(credential.user);
+    setUser({
+      id: credential.user.uid,
+      uid: credential.user.uid,
+      name: 'Demo User',
+      email: '',
+      photoURL: '',
+      isAnonymous: true
+    });
+
+    return true;
   };
 
   const logout = async () => {
-    await api.post('/auth.php?action=logout');
     if (isFirebaseConfigured && auth) {
       await firebaseSignOut(auth);
     }
@@ -182,20 +197,60 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
-    await checkUser();
+    if (!auth?.currentUser) {
+      setUser(null);
+      return;
+    }
+
+    const firebaseUser = auth.currentUser;
+    await reload(firebaseUser);
+    const profile = (await getUserProfile(firebaseUser.uid)) || (await ensureUserProfile(firebaseUser));
+    setUser({
+      id: firebaseUser.uid,
+      uid: firebaseUser.uid,
+      name: profile?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      email: firebaseUser.email || profile?.email || '',
+      photoURL: firebaseUser.photoURL || profile?.photoURL || '',
+      isAnonymous: firebaseUser.isAnonymous || false
+    });
   };
 
   const updateProfileName = async (name) => {
-    const response = await api.post('/auth.php?action=update_profile', { name });
-    if (response.data.status === 'success') {
-      setUser(response.data.user);
-      return response.data.user;
+    if (!auth?.currentUser) {
+      throw new Error('You must be signed in.');
     }
-    throw new Error(response.data.message || 'Unable to update profile.');
+
+    const normalizedName = String(name || '').trim();
+    if (!normalizedName) {
+      throw new Error('Name is required.');
+    }
+
+    await updateProfile(auth.currentUser, { displayName: normalizedName });
+    const userProfile = await updateUserProfileName(auth.currentUser.uid, normalizedName);
+    setUser((prev) => ({
+      ...(prev || {}),
+      id: auth.currentUser.uid,
+      uid: auth.currentUser.uid,
+      name: userProfile.name,
+      email: auth.currentUser.email || prev?.email || '',
+      isAnonymous: auth.currentUser.isAnonymous || prev?.isAnonymous || false
+    }));
+
+    return userProfile;
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    if (!auth?.currentUser?.email) {
+      throw new Error('You must be signed in.');
+    }
+
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    await updatePassword(auth.currentUser, newPassword);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, refreshUser, updateProfileName, loading }}>
+    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, loginAsDemo, logout, refreshUser, updateProfileName, changePassword, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

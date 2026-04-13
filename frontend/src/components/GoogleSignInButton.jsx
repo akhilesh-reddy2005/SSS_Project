@@ -14,8 +14,7 @@ const GoogleSignInButton = ({ onCredential, onError, disabled = false }) => {
     try {
       setBusy(true);
       const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-      onCredential(idToken);
+      onCredential(result.user);
     } catch (error) {
       if (error?.code === 'auth/popup-closed-by-user') {
         onError?.('Google sign-in popup was closed before completion.');

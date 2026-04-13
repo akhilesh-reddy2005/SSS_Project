@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useContext, useEffect, useState } from 'react';
 import { X, Loader2, Save } from 'lucide-react';
+import { saveExpense } from '../services/firebaseData';
+import { AuthContext } from '../context/AuthContext';
 
 const ExpenseForm = ({ expense, onClose, onSaved }) => {
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     amount: '',
     category: 'Food',
@@ -11,6 +13,7 @@ const ExpenseForm = ({ expense, onClose, onSaved }) => {
   });
   const [receiptFile, setReceiptFile] = useState(null);
   const [existingReceiptUrl, setExistingReceiptUrl] = useState('');
+  const [existingReceiptPath, setExistingReceiptPath] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,8 +27,10 @@ const ExpenseForm = ({ expense, onClose, onSaved }) => {
         description: expense.description || ''
       });
       setExistingReceiptUrl(expense.receipt_url || '');
+      setExistingReceiptPath(expense.receipt_path || '');
     } else {
       setExistingReceiptUrl('');
+      setExistingReceiptPath('');
     }
     setReceiptFile(null);
   }, [expense]);
@@ -40,35 +45,14 @@ const ExpenseForm = ({ expense, onClose, onSaved }) => {
     setLoading(true);
     setError('');
     try {
-      if (receiptFile) {
-        const payload = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            payload.append(key, value);
-          }
-        });
-        payload.append('receipt', receiptFile);
-
-        if (expense) {
-          payload.append('_method', 'PUT');
-          await api.post('/expenses.php', payload, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
-        } else {
-          await api.post('/expenses.php', payload, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
-        }
-      } else {
-        if (expense) {
-          await api.put('/expenses.php', formData);
-        } else {
-          await api.post('/expenses.php', formData);
-        }
-      }
+      await saveExpense(user?.uid || user?.id, {
+        ...formData,
+        receipt_url: existingReceiptUrl,
+        receipt_path: existingReceiptPath
+      }, receiptFile);
       onSaved();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save expense.');
+      setError(err.message || 'Failed to save expense.');
     } finally {
       setLoading(false);
     }

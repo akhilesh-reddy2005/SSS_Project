@@ -1,6 +1,0 @@
-uploads/
-*.log
-.git
-.gitignore
-.DS_Store
-node_modules/

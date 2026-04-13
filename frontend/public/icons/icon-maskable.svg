@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Smart Expense Tracker maskable icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#082f49"/>
+      <stop offset="100%" stop-color="#164e63"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(64,64)">
+    <rect width="384" height="384" rx="92" fill="#0f172a"/>
+    <rect x="84" y="96" width="216" height="206" rx="34" fill="#0b1220" stroke="#67e8f9" stroke-opacity="0.45" stroke-width="10"/>
+    <circle cx="192" cy="186" r="56" fill="#22d3ee"/>
+    <rect x="118" y="262" width="148" height="14" rx="7" fill="#67e8f9"/>
+  </g>
+</svg>

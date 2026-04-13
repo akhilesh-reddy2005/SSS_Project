@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Wallet, Loader2, UserPlus } from 'lucide-react';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -13,6 +13,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   
   const { register, loginWithGoogle } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();

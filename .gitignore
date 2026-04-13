@@ -13,12 +13,8 @@ yarn-error.log*
 
 # Environment/local config
 frontend/.env
-backend/config/firebase.local.php
 
 # OS/editor
 .DS_Store
 Thumbs.db
 .vscode/
-
-# Runtime uploads
-backend/uploads/

@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import ExpenseForm from '../components/ExpenseForm';
-import api from '../services/api';
+import InstallAppButton from '../components/InstallAppButton';
+import { deleteExpense as deleteExpenseDoc, getReports, listExpenses, setBudget } from '../services/firebaseData';
+import { AuthContext } from '../context/AuthContext';
 import {
   PieChart,
   Pie,
@@ -70,6 +72,7 @@ const getMonthDateRange = (monthKey) => {
 };
 
 const Dashboard = () => {
+  const { user } = useContext(AuthContext);
   const [data, setData] = useState({
     total_monthly: 0,
     category_breakdown: [],
@@ -102,11 +105,9 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await api.get(`/reports.php?month=${currentMonth}`);
-      if (response.data.status === 'success') {
-        setData(response.data.data);
-        setBudgetInput(response.data.data.budget?.amount ? String(response.data.data.budget.amount) : '');
-      }
+      const reportData = await getReports(user?.uid || user?.id, currentMonth);
+      setData(reportData);
+      setBudgetInput(reportData.budget?.amount ? String(reportData.budget.amount) : '');
     } catch (err) {
       console.error(err);
     } finally {
@@ -117,16 +118,8 @@ const Dashboard = () => {
   const fetchExpenses = async () => {
     setLoadingExpenses(true);
     try {
-      const params = new URLSearchParams();
-      if (filters.startDate) params.append('start_date', filters.startDate);
-      if (filters.endDate) params.append('end_date', filters.endDate);
-      if (filters.category && filters.category !== 'All') params.append('category', filters.category);
-      if (filters.search) params.append('search', filters.search);
-
-      const response = await api.get(`/expenses.php?${params.toString()}`);
-      if (response.data.status === 'success') {
-        setExpenses(response.data.data);
-      }
+      const rows = await listExpenses(user?.uid || user?.id, filters);
+      setExpenses(rows);
     } catch (err) {
       console.error(err);
     } finally {
@@ -144,7 +137,7 @@ const Dashboard = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
-      await api.delete('/expenses.php', { data: { id } });
+      await deleteExpenseDoc(user?.uid || user?.id, id);
       fetchDashboardData();
       fetchExpenses();
     }
@@ -159,18 +152,10 @@ const Dashboard = () => {
 
     setSavingBudget(true);
     try {
-      const response = await api.post('/reports.php?action=set_budget', {
-        month: currentMonth,
-        amount
-      });
-
-      if (response.data.status !== 'success') {
-        window.alert(response.data.message || 'Failed to save budget.');
-      } else {
-        fetchDashboardData();
-      }
+      await setBudget(user?.uid || user?.id, currentMonth, amount);
+      fetchDashboardData();
     } catch (err) {
-      window.alert(err.response?.data?.message || 'Failed to save budget.');
+      window.alert(err.message || 'Failed to save budget.');
     } finally {
       setSavingBudget(false);
     }
@@ -217,6 +202,8 @@ const Dashboard = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <InstallAppButton className="px-4 py-2.5" />
+
             <div className="glass-card flex items-center px-4 py-2.5 rounded-xl cursor-default">
               <Calendar className="w-5 h-5 text-indigo-400 mr-3" />
               <input

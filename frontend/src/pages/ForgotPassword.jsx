@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth, isFirebaseConfigured } from '../services/firebase';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -15,14 +16,14 @@ const ForgotPassword = () => {
     setMessage('');
 
     try {
-      const response = await api.post('/auth.php?action=forgot_password', { email });
-      if (response.data.status === 'success') {
-        setMessage(response.data.message || 'If the email exists, a password reset email has been sent.');
-      } else {
-        setError(response.data.message || 'Unable to process request.');
+      if (!isFirebaseConfigured || !auth) {
+        throw new Error('Firebase config is missing. Set VITE_FIREBASE_* keys in frontend/.env.');
       }
+
+      await sendPasswordResetEmail(auth, email);
+      setMessage('If the email exists, a password reset email has been sent.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to process request.');
+      setError(err.message || 'Unable to process request.');
     } finally {
       setLoading(false);
     }
