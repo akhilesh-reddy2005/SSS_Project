@@ -17,10 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Database Connection
-$host = 'sql100.infinityfree.com';
-$db   = 'if0_41648753_expense_tracker';
-$user = 'if0_41648753';
-$pass = '3xQQEMKYjI6Mm';
+$host = 'localhost';
+$db   = 'expense_tracker';
+$user = 'root';
+$pass = ''; // Default XAMPP password is empty
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
